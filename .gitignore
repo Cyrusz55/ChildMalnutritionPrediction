@@ -1,1 +1,20 @@
-data
+# Ignore raw/stata files
+data/*.DTA
+data/*.dta
+
+# keep processed CSV in repo
+!data/children_processed.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Jupyter
+.ipynb_checkpoints
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
