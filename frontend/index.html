@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <meta
+      name="description"
+      content="Child malnutrition risk prediction — accessible frontend for the FastAPI model."
+    />
+    <meta
+      property="og:title"
+      content="Child Malnutrition Prediction"
+    />
+    <meta
+      property="og:description"
+      content="Predict child malnutrition risk from household and health features."
+    />
+    <title>Child Malnutrition Prediction</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f3f1ea;
+        --bg-accent: #ebe6da;
+        --surface: rgba(255, 255, 255, 0.78);
+        --surface-strong: rgba(255, 255, 255, 0.92);
+        --surface-soft: rgba(246, 242, 233, 0.82);
+        --text: #1f2a22;
+        --text-muted: #5e6c61;
+        --line: rgba(42, 55, 45, 0.12);
+        --line-strong: rgba(42, 55, 45, 0.2);
+        --accent: #2f7d67;
+        --accent-strong: #23624f;
+        --accent-soft: rgba(47, 125, 103, 0.12);
+        --danger: #b55147;
+        --warning: #b8772d;
+        --success: #2f7d67;
+        --shadow-sm: 0 10px 24px rgba(44, 55, 44, 0.06);
+        --shadow-lg: 0 24px 80px rgba(44, 55, 44, 0.1);
+        --radius-lg: 24px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        color-scheme: light;
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Outfit, system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(86, 131, 111, 0.11),
+            transparent 32%
+          ),
+          radial-gradient(
+            circle at right 15% top 10%,
+            rgba(151, 120, 66, 0.08),
+            transparent 28%
+          ),
+          linear-gradient(180deg, #f7f5ef 0%, var(--bg) 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.28;
+        background-image:
+          linear-gradient(
+            rgba(255, 255, 255, 0.18) 1px,
+            transparent 1px
+          ),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.18) 1px,
+            transparent 1px
+          );
+        background-size: 24px 24px;
+        mask-image: radial-gradient(circle at center, black, transparent 85%);
+      }
+
+      a,
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .skip-link {
+        position: absolute;
+        left: 16px;
+        top: -48px;
+        z-index: 1000;
+        padding: 12px 16px;
+        border-radius: 999px;
+        background: var(--accent-strong);
+        color: #fff;
+        text-decoration: none;
+        transition: top 160ms var(--ease-out);
+      }
+
+      .skip-link:focus {
+        top: 16px;
+      }
+
+      .page {
+        position: relative;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 28px 20px 56px;
+      }
+
+      .hero {
+        margin-bottom: 22px;
+        padding: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: calc(var(--radius-lg) + 4px);
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.92),
+            rgba(248, 244, 236, 0.82)
+          );
+        box-shadow: var(--shadow-lg);
+      }
+
+      .hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+
+      .hero h1 {
+        max-width: 10ch;
+        margin: 18px 0 12px;
+        font-size: clamp(2.3rem, 4vw, 4.4rem);
+        line-height: 0.96;
+        letter-spacing: -0.04em;
+        text-wrap: balance;
+      }
+
+      .hero p {
+        max-width: 64ch;
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 1.04rem;
+        line-height: 1.65;
+        text-wrap: pretty;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        backdrop-filter: blur(12px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 20px;
+        padding: 22px;
+      }
+
+      .sidebar h2,
+      .form-shell h2,
+      .results h2 {
+        margin: 0 0 10px;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+
+      .sidebar p {
+        margin: 0 0 18px;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      .meta-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .meta-item {
+        display: grid;
+        gap: 2px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.56);
+      }
+
+      .meta-label {
+        color: var(--text-muted);
+        font-size: 0.83rem;
+      }
+
+      .meta-value {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .form-shell {
+        padding: 22px;
+      }
+
+      .form-intro {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: end;
+        margin-bottom: 18px;
+      }
+
+      .form-intro p {
+        max-width: 62ch;
+        margin: 0;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+
+      form {
+        display: grid;
+        gap: 18px;
+      }
+
+      .form-section {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--surface-strong);
+      }
+
+      .form-section legend {
+        padding: 0 10px;
+        font-size: 0.96rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .section-note {
+        margin: 0 0 16px;
+        color: var(--text-muted);
+        font-size: 0.94rem;
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      .field-full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .help-text,
+      .small {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      input,
+      select {
+        min-height: 48px;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface-soft);
+        color: var(--text);
+        transition:
+          border-color 160ms var(--ease-out),
+          box-shadow 160ms var(--ease-out),
+          background-color 160ms var(--ease-out),
+          transform 160ms var(--ease-out);
+      }
+
+      input:hover,
+      select:hover {
+        border-color: var(--line-strong);
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      input:focus-visible,
+      select:focus-visible,
+      button:focus-visible {
+        outline: none;
+        border-color: rgba(47, 125, 103, 0.55);
+        box-shadow: 0 0 0 4px rgba(47, 125, 103, 0.15);
+      }
+
+      input[type="range"] {
+        min-height: auto;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        accent-color: var(--accent);
+        box-shadow: none;
+      }
+
+      .range-wrap {
+        display: grid;
+        gap: 8px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.56);
+      }
+
+      .range-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .range-value {
+        min-width: 72px;
+        text-align: right;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 2px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 12px 18px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        cursor: pointer;
+        transition:
+          transform 160ms var(--ease-out),
+          box-shadow 160ms var(--ease-out),
+          background-color 160ms var(--ease-out),
+          border-color 160ms var(--ease-out),
+          color 160ms var(--ease-out);
+      }
+
+      .button:active {
+        transform: scale(0.97);
+      }
+
+      .button-primary {
+        background: var(--accent);
+        color: #f7fbf8;
+        box-shadow: 0 12px 26px rgba(47, 125, 103, 0.18);
+      }
+
+      .button-primary:hover {
+        background: var(--accent-strong);
+      }
+
+      .button-secondary {
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.65);
+        color: var(--text);
+      }
+
+      .button-secondary:hover {
+        background: #fff;
+      }
+
+      .results {
+        margin-top: 22px;
+        padding: 20px;
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: start;
+        margin-bottom: 8px;
+      }
+
+      .results-copy p {
+        margin: 0;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.64);
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .result-cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .result-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.92),
+            rgba(248, 244, 236, 0.82)
+          );
+        transition:
+          transform 180ms var(--ease-out),
+          border-color 180ms var(--ease-out),
+          box-shadow 180ms var(--ease-out);
+      }
+
+      .result-card:hover {
+        transform: translateY(-1px);
+        border-color: var(--line-strong);
+      }
+
+      .result-card.low {
+        border-left: 4px solid var(--success);
+      }
+
+      .result-card.medium {
+        border-left: 4px solid var(--warning);
+      }
+
+      .result-card.high {
+        border-left: 4px solid var(--danger);
+      }
+
+      .result-label {
+        margin-bottom: 8px;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+      }
+
+      .result-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: var(--text);
+      }
+
+      .probability-value {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .risk-factors-block {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      .risk-factors-list {
+        display: grid;
+        gap: 10px;
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .risk-factors-list li {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.6);
+        color: var(--text);
+      }
+
+      .technical-toggle {
+        margin-top: 16px;
+      }
+
+      .show-json-btn {
+        min-height: 44px;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--text);
+        cursor: pointer;
+        transition:
+          transform 160ms var(--ease-out),
+          background-color 160ms var(--ease-out),
+          border-color 160ms var(--ease-out);
+      }
+
+      .show-json-btn:hover {
+        background: #fff;
+        border-color: var(--line-strong);
+      }
+
+      .show-json-btn:active {
+        transform: scale(0.98);
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 12px 0 0;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #f5f0e6;
+        color: #304036;
+        font-size: 0.84rem;
+        line-height: 1.55;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+
+      .is-loading .button-primary {
+        opacity: 0.85;
+        cursor: wait;
+      }
+
+      .is-loading .button-primary::after {
+        content: "…";
+        margin-left: 6px;
+      }
+
+      .result-reveal {
+        animation: reveal-up 220ms var(--ease-out);
+      }
+
+      @keyframes reveal-up {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+        }
+
+        .result-cards {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          padding: 18px 14px 40px;
+        }
+
+        .hero,
+        .sidebar,
+        .form-shell,
+        .results {
+          padding: 18px;
+        }
+
+        .form-intro,
+        .results-header {
+          flex-direction: column;
+          align-items: start;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          flex-direction: column;
+        }
+
+        .button,
+        .show-json-btn {
+          width: 100%;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        .result-card:hover,
+        .button:active,
+        .show-json-btn:active {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a
+      class="skip-link"
+      href="#main-content"
+      >Skip to prediction form</a
+    >
+
+    <div class="page">
+      <header class="hero panel">
+        <div class="hero-kicker">Child health screening interface</div>
+        <h1>Assess malnutrition risk with clear, structured inputs.</h1>
+        <p>
+          Enter household, maternal, and child health details used by the
+          prediction model. The interface is designed to make data entry easier
+          to scan, safer to review, and simpler to interpret after submission.
+        </p>
+      </header>
+
+      <main
+        id="main-content"
+        class="layout"
+      >
+        <aside class="sidebar panel">
+          <h2>What this tool uses</h2>
+          <p>
+            The model combines household context, child symptoms, maternal
+            factors, and living conditions to estimate risk. Use realistic input
+            values for the most reliable result.
+          </p>
+
+          <ul class="meta-list">
+            <li class="meta-item">
+              <span class="meta-label">Prediction output</span>
+              <span class="meta-value">Risk level and classification</span>
+            </li>
+            <li class="meta-item">
+              <span class="meta-label">Best for</span>
+              <span class="meta-value"
+                >Structured screening and model testing</span
+              >
+            </li>
+            <li class="meta-item">
+              <span class="meta-label">Review carefully</span>
+              <span class="meta-value"
+                >Region, age, symptoms, household factors</span
+              >
+            </li>
+          </ul>
+        </aside>
+
+        <section class="form-shell panel">
+          <div class="form-intro">
+            <div>
+              <h2>Prediction form</h2>
+              <p>
+                Fields are grouped by topic so the form reads more like a case
+                record and less like a raw dataset.
+              </p>
+            </div>
+          </div>
+
+          <form id="predictForm">
+            <fieldset class="form-section">
+              <legend>Child profile</legend>
+              <p class="section-note">
+                Basic child identity and age information used for the
+                prediction.
+              </p>
+
+              <div class="grid">
+                <div class="field">
+                  <label for="region">Region</label>
+                  <input
+                    id="region"
+                    name="region"
+                    type="text"
+                    placeholder="e.g. Nairobi"
+                    autocomplete="address-level1"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="child_sex">Child sex</label>
+                  <select
+                    id="child_sex"
+                    name="child_sex"
+                    required
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="child_age_months">Child age (months)</label>
+                  <input
+                    id="child_age_months"
+                    name="child_age_months"
+                    type="number"
+                    min="0"
+                    max="60"
+                    value="24"
+                    inputmode="numeric"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="residence_urban_rural">Residence</label>
+                  <select
+                    id="residence_urban_rural"
+                    name="residence_urban_rural"
+                  >
+                    <option value="Urban">Urban</option>
+                    <option value="Rural">Rural</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>Maternal profile</legend>
+              <p class="section-note">
+                Education, work, and physical indicators that contribute to the
+                household risk picture.
+              </p>
+
+              <div class="grid">
+                <div class="field">
+                  <label for="mother_education_level">Mother education</label>
+                  <select
+                    id="mother_education_level"
+                    name="mother_education_level"
+                  >
+                    <option value="No Education">No Education</option>
+                    <option value="Primary">Primary</option>
+                    <option value="Secondary">Secondary</option>
+                    <option value="Higher">Higher</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="mother_working_status">Mother working</label>
+                  <select
+                    id="mother_working_status"
+                    name="mother_working_status"
+                  >
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="mother_education_single_years"
+                    >Mother education (years)</label
+                  >
+                  <input
+                    id="mother_education_single_years"
+                    name="mother_education_single_years"
+                    type="number"
+                    min="0"
+                    max="20"
+                    value="6"
+                    inputmode="numeric"
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="age_at_first_birth"
+                    >Age at first birth (years)</label
+                  >
+                  <input
+                    id="age_at_first_birth"
+                    name="age_at_first_birth"
+                    type="number"
+                    min="10"
+                    max="50"
+                    value="20"
+                    inputmode="numeric"
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="mother_weight_kg">Mother weight (kg)</label>
+                  <input
+                    id="mother_weight_kg"
+                    name="mother_weight_kg"
+                    type="number"
+                    step="0.1"
+                    min="30"
+                    max="150"
+                    value="60"
+                    inputmode="decimal"
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="mother_bmi_x100">Mother BMI (×100)</label>
+                  <input
+                    id="mother_bmi_x100"
+                    name="mother_bmi_x100"
+                    type="number"
+                    step="0.1"
+                    min="1000"
+                    max="5000"
+                    value="2400"
+                    inputmode="decimal"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>Household and living conditions</legend>
+              <p class="section-note">
+                Household context and shelter conditions used by the model.
+              </p>
+
+              <div class="grid">
+                <div class="field">
+                  <label for="household_size">Household size (people)</label>
+                  <input
+                    id="household_size"
+                    name="household_size"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value="5"
+                    inputmode="numeric"
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="wealth_index_quintile">Wealth quintile</label>
+                  <select
+                    id="wealth_index_quintile"
+                    name="wealth_index_quintile"
+                  >
+                    <option value="Poorest">Poorest</option>
+                    <option value="Poorer">Poorer</option>
+                    <option
+                      value="Middle"
+                      selected
+                    >
+                      Middle
+                    </option>
+                    <option value="Richer">Richer</option>
+                    <option value="Richest">Richest</option>
+                  </select>
+                </div>
+
+                <div class="field field-full">
+                  <label for="wealth_index_score_slider"
+                    >Wealth score</label
+                  >
+                  <div class="range-wrap">
+                    <div class="range-row">
+                      <input
+                        id="wealth_index_score_slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value="50"
+                        aria-describedby="wealth_index_help wealth_index_score_label"
+                      />
+                      <div
+                        id="wealth_index_score_label"
+                        class="range-value"
+                      >
+                        50%
+                      </div>
+                    </div>
+                    <div
+                      class="help-text"
+                      id="wealth_index_help"
+                    >
+                      The slider is shown as an easy-to-read percentile. Behind
+                      the scenes, it is converted to the model score range of
+                      -10 to 10.
+                    </div>
+                  </div>
+                  <input
+                    id="wealth_index_score"
+                    name="wealth_index_score"
+                    type="hidden"
+                    value="0.0"
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="main_roof_material">Roof material</label>
+                  <select
+                    id="main_roof_material"
+                    name="main_roof_material"
+                  >
+                    <option value="Thatch/grass/makuti">
+                      Thatch/grass/makuti
+                    </option>
+                    <option value="Iron sheets/Metal">
+                      Iron sheets/Metal
+                    </option>
+                    <option value="Cement">Cement</option>
+                    <option value="Ceramic tiles">Ceramic tiles</option>
+                    <option value="Asbestos sheet">Asbestos sheet</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="type_of_toilet_facility"
+                    >Toilet facility</label
+                  >
+                  <select
+                    id="type_of_toilet_facility"
+                    name="type_of_toilet_facility"
+                  >
+                    <option value="Pit latrine with slab">
+                      Pit latrine with slab
+                    </option>
+                    <option value="Pit latrine without slab">
+                      Pit latrine without slab
+                    </option>
+                    <option value="No facility/bush/field">
+                      No facility/bush/field
+                    </option>
+                    <option value="Flush to piped sewer">
+                      Flush to piped sewer
+                    </option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="main_floor_material">Floor material</label>
+                  <select
+                    id="main_floor_material"
+                    name="main_floor_material"
+                  >
+                    <option value="Earth/sand">Earth/sand</option>
+                    <option value="Cement">Cement</option>
+                    <option value="Ceramic tiles">Ceramic tiles</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="main_wall_material">Wall material</label>
+                  <select
+                    id="main_wall_material"
+                    name="main_wall_material"
+                  >
+                    <option value="Cane/palm/trunks">Cane/palm/trunks</option>
+                    <option value="Cement">Cement</option>
+                    <option value="Bricks">Bricks</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>Recent child health</legend>
+              <p class="section-note">
+                Recent symptoms and feeding status that can affect risk
+                interpretation.
+              </p>
+
+              <div class="grid">
+                <div class="field">
+                  <label for="child_recent_diarrhea">Recent diarrhea</label>
+                  <select
+                    id="child_recent_diarrhea"
+                    name="child_recent_diarrhea"
+                  >
+                    <option value="No">No</option>
+                    <option value="Yes, last 24 hours">
+                      Yes, last 24 hours
+                    </option>
+                    <option value="Yes, last two weeks">
+                      Yes, last two weeks
+                    </option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="child_fever_recent">Recent fever</label>
+                  <select
+                    id="child_fever_recent"
+                    name="child_fever_recent"
+                  >
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </select>
+                </div>
+
+                <div class="field field-full">
+                  <label for="breastfeeding_status"
+                    >Breastfeeding status</label
+                  >
+                  <select
+                    id="breastfeeding_status"
+                    name="breastfeeding_status"
+                  >
+                    <option value="Still breastfeeding">
+                      Still breastfeeding
+                    </option>
+                    <option value="Ever breastfed, not currently">
+                      Ever breastfed, not currently
+                    </option>
+                    <option value="Never breastfed">Never breastfed</option>
+                    <option value="Don't know">Don't know</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <div class="actions">
+              <button
+                class="button button-primary"
+                type="submit"
+              >
+                Predict risk
+              </button>
+              <button
+                id="resetButton"
+                class="button button-secondary"
+                type="button"
+              >
+                Reset form
+              </button>
+            </div>
+          </form>
+
+          <section
+            class="results panel"
+            id="results"
+            aria-live="polite"
+          >
+            <div class="results-header">
+              <div class="results-copy">
+                <h2 id="resultTitle">No prediction yet</h2>
+                <p
+                  class="small"
+                  id="resultText"
+                >
+                  Submit the form to get a malnutrition result and technical
+                  details if needed.
+                </p>
+              </div>
+              <div
+                class="status-chip"
+                id="statusChip"
+              >
+                Waiting for input
+              </div>
+            </div>
+
+            <div
+              class="result-cards"
+              id="resultCardsContainer"
+              style="display: none"
+            >
+              <div
+                class="result-card"
+                id="predictionCard"
+              >
+                <div class="result-label">Prediction</div>
+                <div
+                  class="result-value"
+                  id="predictionValue"
+                >
+                  Not malnourished
+                </div>
+              </div>
+
+              <div
+                class="result-card"
+                id="riskLevelCard"
+              >
+                <div class="result-label">Risk level</div>
+                <div
+                  class="result-value"
+                  id="riskLevelValue"
+                >
+                  Low
+                </div>
+              </div>
+
+              <div
+                class="result-card"
+                id="probabilityCard"
+              >
+                <div class="result-label">Probability</div>
+                <div
+                  class="result-value probability-value"
+                  id="probabilityValue"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="riskFactorsContainer"
+              class="risk-factors-block"
+              style="display: none"
+            >
+              <div class="result-label">Identified risk factors</div>
+              <ul
+                class="risk-factors-list"
+                id="riskFactorsList"
+              ></ul>
+            </div>
+
+            <div
+              class="technical-toggle"
+              id="technicalToggleWrap"
+              style="display: none"
+            >
+              <button
+                class="show-json-btn"
+                id="showJsonBtn"
+                type="button"
+                aria-expanded="false"
+                aria-controls="resultJson"
+              >
+                Show technical details
+              </button>
+              <pre
+                id="resultJson"
+                style="display: none"
+              ></pre>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const form = document.getElementById("predictForm");
+      const resultTitle = document.getElementById("resultTitle");
+      const resultText = document.getElementById("resultText");
+      const resultJson = document.getElementById("resultJson");
+      const resultCardsContainer = document.getElementById(
+        "resultCardsContainer",
+      );
+      const riskFactorsContainer = document.getElementById(
+        "riskFactorsContainer",
+      );
+      const riskFactorsList = document.getElementById("riskFactorsList");
+      const riskLevelCard = document.getElementById("riskLevelCard");
+      const predictionValue = document.getElementById("predictionValue");
+      const riskLevelValue = document.getElementById("riskLevelValue");
+      const probabilityValue = document.getElementById("probabilityValue");
+      const statusChip = document.getElementById("statusChip");
+      const technicalToggleWrap = document.getElementById(
+        "technicalToggleWrap",
+      );
+      const showJsonBtn = document.getElementById("showJsonBtn");
+      const resetButton = document.getElementById("resetButton");
+
+      const slider = document.getElementById("wealth_index_score_slider");
+      const sliderLabel = document.getElementById("wealth_index_score_label");
+      const hiddenWealth = document.getElementById("wealth_index_score");
+
+      function updateWealth() {
+        const pct = Number(slider.value);
+        sliderLabel.textContent = `${pct}%`;
+        hiddenWealth.value = ((pct / 100) * 20 - 10).toFixed(3);
+      }
+
+      function setLoadingState(isLoading) {
+        form.classList.toggle("is-loading", isLoading);
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = isLoading;
+        resetButton.disabled = isLoading;
+      }
+
+      function resetResults() {
+        resultTitle.textContent = "No prediction yet";
+        resultText.textContent =
+          "Submit the form to get a malnutrition result and technical details if needed.";
+        resultJson.textContent = "";
+        resultJson.style.display = "none";
+        resultCardsContainer.style.display = "none";
+        resultCardsContainer.classList.remove("result-reveal");
+        riskFactorsContainer.style.display = "none";
+        technicalToggleWrap.style.display = "none";
+        showJsonBtn.textContent = "Show technical details";
+        showJsonBtn.setAttribute("aria-expanded", "false");
+        statusChip.textContent = "Waiting for input";
+        riskFactorsList.replaceChildren();
+        probabilityValue.textContent = "—";
+        riskLevelCard.className = "result-card";
+      }
+
+      function showTechnicalDetails(data) {
+        technicalToggleWrap.style.display = "block";
+        resultJson.textContent = JSON.stringify(data, null, 2);
+      }
+
+      function formatProbability(data) {
+        const raw =
+          typeof data.probability === "number"
+            ? data.probability
+            : typeof data.malnutrition_probability === "number"
+              ? data.malnutrition_probability
+              : typeof data.risk_probability === "number"
+                ? data.risk_probability
+                : null;
+
+        if (raw === null || Number.isNaN(raw)) {
+          return "Not provided";
+        }
+
+        return `${(raw * 100).toFixed(1)}%`;
+      }
+
+      function safeLabel(text) {
+        return String(text)
+          .replace(/_/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      slider.addEventListener("input", updateWealth);
+      updateWealth();
+
+      resetButton.addEventListener("click", () => {
+        form.reset();
+        updateWealth();
+        resetResults();
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        setLoadingState(true);
+
+        const payload = {
+          region: document.getElementById("region").value.trim(),
+          child_sex: document.getElementById("child_sex").value,
+          child_age_months: Number(
+            document.getElementById("child_age_months").value,
+          ),
+          residence_urban_rural: document.getElementById(
+            "residence_urban_rural",
+          ).value,
+          mother_education_level: document.getElementById(
+            "mother_education_level",
+          ).value,
+          mother_education_single_years:
+            Number(
+              document.getElementById("mother_education_single_years").value,
+            ) || 6,
+          mother_marital_status: "Married",
+          mother_working_status: document.getElementById(
+            "mother_working_status",
+          ).value,
+          mother_weight_kg:
+            Number(document.getElementById("mother_weight_kg").value) || 60,
+          mother_bmi_x100:
+            Number(document.getElementById("mother_bmi_x100").value) || 2400,
+          age_at_first_birth:
+            Number(document.getElementById("age_at_first_birth").value) || 20,
+          household_size:
+            Number(document.getElementById("household_size").value) || 5,
+          wealth_index_quintile: document.getElementById(
+            "wealth_index_quintile",
+          ).value,
+          wealth_index_score:
+            Number(document.getElementById("wealth_index_score").value) || 0.0,
+          child_recent_diarrhea: document.getElementById(
+            "child_recent_diarrhea",
+          ).value,
+          child_fever_recent:
+            document.getElementById("child_fever_recent").value,
+          breastfeeding_status: document.getElementById("breastfeeding_status")
+            .value,
+          drank_from_bottle_recently: "No",
+          fed_tinned_powdered_fresh_milk: "No",
+          fed_baby_formula: "No",
+          source_of_drinking_water: "Piped into dwelling",
+          type_of_toilet_facility: document.getElementById(
+            "type_of_toilet_facility",
+          ).value,
+          type_of_cooking_fuel: "Electricity",
+          has_electricity: "Yes",
+          has_refrigerator: "No",
+          main_floor_material:
+            document.getElementById("main_floor_material").value,
+          main_wall_material: document.getElementById("main_wall_material")
+            .value,
+          main_roof_material: document.getElementById("main_roof_material")
+            .value,
+          owns_farm_animals_livestock: "No",
+          has_land_suitable_for_agriculture: "No",
+          owns_agricultural_land: "No",
+        };
+
+        resultTitle.textContent = "Calculating prediction";
+        resultText.textContent =
+          "Sending request to the backend and validating the response.";
+        statusChip.textContent = "Processing";
+        resultJson.style.display = "none";
+        resultCardsContainer.style.display = "none";
+        riskFactorsContainer.style.display = "none";
+        technicalToggleWrap.style.display = "none";
+
+        const API_BASE =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1"
+            ? "http://127.0.0.1:8000"
+            : window.location.origin;
+
+        try {
+          const resp = await fetch(`${API_BASE}/api/v1/predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await resp.json();
+
+          if (!resp.ok) {
+            resultTitle.textContent = "Request could not be completed";
+            resultText.textContent =
+              data.detail && typeof data.detail === "string"
+                ? data.detail
+                : "Validation or server error";
+            statusChip.textContent = "Error";
+            showTechnicalDetails(data.detail || data);
+            resultJson.style.display = "block";
+            showJsonBtn.textContent = "Hide technical details";
+            showJsonBtn.setAttribute("aria-expanded", "true");
+            return;
+          }
+
+          resultTitle.textContent = "Prediction result";
+          resultText.textContent =
+            "Review the model output first, then open the technical details only if needed.";
+          statusChip.textContent = "Completed";
+
+          resultCardsContainer.style.display = "grid";
+          resultCardsContainer.classList.remove("result-reveal");
+          void resultCardsContainer.offsetWidth;
+          resultCardsContainer.classList.add("result-reveal");
+
+          predictionValue.textContent = data.prediction || "Not provided";
+          riskLevelValue.textContent = data.risk_level || "Not provided";
+          probabilityValue.textContent = formatProbability(data);
+          riskLevelCard.className =
+            "result-card " + String(data.risk_level || "").toLowerCase();
+
+          riskFactorsList.replaceChildren();
+          if (Array.isArray(data.risk_factors) && data.risk_factors.length > 0) {
+            const fragment = document.createDocumentFragment();
+
+            data.risk_factors.forEach((factor) => {
+              const item = document.createElement("li");
+              item.textContent = safeLabel(factor);
+              fragment.appendChild(item);
+            });
+
+            riskFactorsList.appendChild(fragment);
+            riskFactorsContainer.style.display = "block";
+          } else {
+            riskFactorsContainer.style.display = "none";
+          }
+
+          showTechnicalDetails(data);
+        } catch (err) {
+          resultTitle.textContent = "Connection error";
+          resultText.textContent =
+            err && err.message
+              ? err.message
+              : "Something went wrong while contacting the backend.";
+          statusChip.textContent = "Error";
+          resultCardsContainer.style.display = "none";
+          riskFactorsContainer.style.display = "none";
+          showTechnicalDetails({ error: String(err) });
+          resultJson.style.display = "block";
+          showJsonBtn.textContent = "Hide technical details";
+          showJsonBtn.setAttribute("aria-expanded", "true");
+        } finally {
+          setLoadingState(false);
+        }
+      });
+
+      function toggleTechnicalDetails() {
+        const isHidden = resultJson.style.display === "none";
+        resultJson.style.display = isHidden ? "block" : "none";
+        showJsonBtn.textContent = isHidden
+          ? "Hide technical details"
+          : "Show technical details";
+        showJsonBtn.setAttribute("aria-expanded", String(isHidden));
+      }
+
+      showJsonBtn.addEventListener("click", toggleTechnicalDetails);
+    </script>
+  </body>
+</html>

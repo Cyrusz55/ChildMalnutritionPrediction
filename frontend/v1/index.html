@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Child malnutrition risk prediction — simple frontend for the FastAPI model." />
+  <meta property="og:title" content="Child Malnutrition Prediction" />
+  <meta property="og:description" content="Predict child malnutrition risk from household and health features." />
+  <title>Child Malnutrition Prediction</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* Minimal subset of the original theme adapted for this project */
+    body{font-family:Inter, 'Outfit', system-ui, sans-serif;margin:0;background:#0b0d12;color:#f4f6fb}
+    .page{max-width:1100px;margin:24px auto;padding:20px}
+    .panel{background:rgba(255,255,255,0.03);padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.04)}
+    label{display:block;font-weight:600;margin-bottom:6px}
+    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(15,17,20,0.85);color:#f4f6fb}
+    select{appearance:auto;-webkit-appearance:menulist-button}
+    option{background:#0b0d12;color:#f4f6fb}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    input[type="range"]{height:8px;cursor:pointer;accent-color:#8bd3c7}
+    .actions{display:flex;gap:12px;margin-top:12px}
+    .button{background:#8bd3c7;border:0;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    .results{margin-top:18px;padding:16px;border-radius:12px;background:rgba(20,25,34,0.6);border:1px solid rgba(255,255,255,0.04)}
+    .small{font-size:0.9rem;color:rgba(255,255,255,0.7)}
+    .result-card{background:rgba(255,255,255,0.05);padding:14px;border-radius:10px;margin:10px 0;border-left:4px solid #8bd3c7}
+    .result-card.high{border-left-color:#ff6b6b}
+    .result-card.medium{border-left-color:#ffa94d}
+    .result-card.low{border-left-color:#8bd3c7}
+    .result-value{font-size:1.3rem;font-weight:700;color:#8bd3c7}
+    .risk-factors-list{list-style:none;padding:0;margin:8px 0}
+    .risk-factors-list li{padding:6px 0;color:rgba(255,255,255,0.8)}
+    .risk-factors-list li:before{content:"• ";color:#ffa94d;margin-right:8px}
+    .show-json-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#f4f6fb;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem;margin-top:12px}
+    .show-json-btn:hover{background:rgba(255,255,255,0.15)}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Child Malnutrition Risk — Predictor</h1>
+    <p class="small">Enter household and child information used by the model and get a malnutrition risk probability.</p>
+
+    <div class="panel">
+      <form id="predictForm">
+        <div class="grid">
+          <div>
+            <label for="region">Region</label>
+            <input id="region" name="region" type="text" placeholder="e.g. Nairobi" required />
+          </div>
+          <div>
+            <label for="child_sex">Child sex</label>
+            <select id="child_sex" name="child_sex" required>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div>
+            <label for="child_age_months">Child age (months)</label>
+            <input id="child_age_months" name="child_age_months" type="number" min="0" max="60" value="24" required />
+          </div>
+          <div>
+            <label for="residence_urban_rural">Residence</label>
+            <select id="residence_urban_rural" name="residence_urban_rural">
+              <option value="Urban">Urban</option>
+              <option value="Rural">Rural</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="mother_education_level">Mother education</label>
+            <select id="mother_education_level" name="mother_education_level">
+              <option value="No Education">No Education</option>
+              <option value="Primary">Primary</option>
+              <option value="Secondary">Secondary</option>
+              <option value="Higher">Higher</option>
+            </select>
+          </div>
+          <div>
+            <label for="mother_working_status">Mother working</label>
+            <select id="mother_working_status" name="mother_working_status">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="mother_education_single_years">Mother education (years)</label>
+            <input id="mother_education_single_years" name="mother_education_single_years" type="number" min="0" max="20" value="6" />
+          </div>
+          <div>
+            <label for="age_at_first_birth">Age at first birth (years)</label>
+            <input id="age_at_first_birth" name="age_at_first_birth" type="number" min="10" max="50" value="20" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="mother_weight_kg">Mother weight (kg)</label>
+            <input id="mother_weight_kg" name="mother_weight_kg" type="number" step="0.1" min="30" max="150" value="60" />
+          </div>
+          <div>
+            <label for="mother_bmi_x100">Mother BMI (×100)</label>
+            <input id="mother_bmi_x100" name="mother_bmi_x100" type="number" step="0.1" min="1000" max="5000" value="2400" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="household_size">Household size (people)</label>
+            <input id="household_size" name="household_size" type="number" min="1" max="20" value="5" />
+          </div>
+          <div>
+            <label for="main_roof_material">Roof material</label>
+            <select id="main_roof_material" name="main_roof_material">
+              <option value="Thatch/grass/makuti">Thatch/grass/makuti</option>
+              <option value="Iron sheets/Metal">Iron sheets/Metal</option>
+              <option value="Cement">Cement</option>
+              <option value="Ceramic tiles">Ceramic tiles</option>
+              <option value="Asbestos sheet">Asbestos sheet</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="wealth_index_quintile">Wealth quintile</label>
+            <select id="wealth_index_quintile" name="wealth_index_quintile">
+              <option value="Poorest">Poorest</option>
+              <option value="Poorer">Poorer</option>
+              <option value="Middle" selected>Middle</option>
+              <option value="Richer">Richer</option>
+              <option value="Richest">Richest</option>
+            </select>
+          </div>
+          <div>
+            <label for="wealth_index_score">Wealth score (slider — more understandable)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="wealth_index_score_slider" type="range" min="0" max="100" value="50" style="flex:1" />
+              <div id="wealth_index_score_label" style="min-width:70px;text-align:right;font-weight:600">50%</div>
+            </div>
+            <small class="small">The slider shows a percentile-style wealth indicator. The model expects a score in [-10,10]; we convert behind the scenes.</small>
+            <input id="wealth_index_score" name="wealth_index_score" type="hidden" value="0.0" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="child_recent_diarrhea">Recent diarrhea</label>
+            <select id="child_recent_diarrhea" name="child_recent_diarrhea">
+              <option value="No">No</option>
+              <option value="Yes, last 24 hours">Yes, last 24 hours</option>
+              <option value="Yes, last two weeks">Yes, last two weeks</option>
+            </select>
+          </div>
+          <div>
+            <label for="child_fever_recent">Recent fever</label>
+            <select id="child_fever_recent" name="child_fever_recent">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="breastfeeding_status">Breastfeeding status</label>
+            <select id="breastfeeding_status" name="breastfeeding_status">
+              <option value="Still breastfeeding">Still breastfeeding</option>
+              <option value="Ever breastfed, not currently">Ever breastfed, not currently</option>
+              <option value="Never breastfed">Never breastfed</option>
+              <option value="Don't know">Don't know</option>
+            </select>
+          </div>
+          <div>
+            <label for="type_of_toilet_facility">Toilet facility</label>
+            <select id="type_of_toilet_facility" name="type_of_toilet_facility">
+              <option value="Pit latrine with slab">Pit latrine with slab</option>
+              <option value="Pit latrine without slab">Pit latrine without slab</option>
+              <option value="No facility/bush/field">No facility/bush/field</option>
+              <option value="Flush to piped sewer">Flush to piped sewer</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid">
+          <div>
+            <label for="main_floor_material">Floor material</label>
+            <select id="main_floor_material" name="main_floor_material">
+              <option value="Earth/sand">Earth/sand</option>
+              <option value="Cement">Cement</option>
+              <option value="Ceramic tiles">Ceramic tiles</option>
+            </select>
+          </div>
+          <div>
+            <label for="main_wall_material">Wall material</label>
+            <select id="main_wall_material" name="main_wall_material">
+              <option value="Cane/palm/trunks">Cane/palm/trunks</option>
+              <option value="Cement">Cement</option>
+              <option value="Bricks">Bricks</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="button" type="submit">Predict risk</button>
+          <button type="button" onclick="document.getElementById('predictForm').reset();" class="button" style="background:#fff;color:#071012">Reset</button>
+        </div>
+      </form>
+
+      <div class="results" id="results">
+        <h3 id="resultTitle">No prediction yet</h3>
+        <p class="small" id="resultText">Submit the form to get a malnutrition probability (0–1).</p>
+
+        <!-- User-friendly result cards (shown to end users) -->
+        <div id="resultCardsContainer" style="display:none">
+          <!-- Prediction card -->
+          <div class="result-card" id="predictionCard">
+            <div style="opacity:0.7;font-size:0.9rem">Prediction</div>
+            <div class="result-value" id="predictionValue">Not malnourished</div>
+          </div>
+
+          <!-- Risk level card -->
+          <div class="result-card" id="riskLevelCard">
+            <div style="opacity:0.7;font-size:0.9rem">Risk Level</div>
+            <div class="result-value" id="riskLevelValue">Low</div>
+          </div>
+
+          <!-- Identified risk factors (if any) -->
+          <div id="riskFactorsContainer" style="display:none">
+            <div style="opacity:0.7;font-size:0.9rem;margin-top:16px">Identified Risk Factors</div>
+            <ul class="risk-factors-list" id="riskFactorsList"></ul>
+          </div>
+
+          <!-- Show technical details toggle -->
+          <button class="show-json-btn" type="button" onclick="toggleTechnicalDetails()">Show technical details</button>
+          <pre id="resultJson" style="white-space:pre-wrap;background:rgba(0,0,0,0.12);padding:8px;border-radius:8px;margin-top:12px;display:none;font-size:0.85rem"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const form = document.getElementById('predictForm');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultText = document.getElementById('resultText');
+    const resultJson = document.getElementById('resultJson');
+
+    // Wire wealth slider -> hidden model score and label
+    const slider = document.getElementById('wealth_index_score_slider');
+    const sliderLabel = document.getElementById('wealth_index_score_label');
+    const hiddenWealth = document.getElementById('wealth_index_score');
+    function updateWealth() {
+      const pct = Number(slider.value);
+      sliderLabel.textContent = pct + '%';
+      // Map 0-100 -> -10..10 expected by the model
+      hiddenWealth.value = ((pct / 100) * 20 - 10).toFixed(3);
+    }
+    slider.addEventListener('input', updateWealth);
+    updateWealth();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // Build payload from visible form fields and provide sensible defaults for the
+      // other required fields present in the server-side Pydantic model.
+      const payload = {
+         region: document.getElementById('region').value.trim(),
+         child_sex: document.getElementById('child_sex').value,
+         child_age_months: Number(document.getElementById('child_age_months').value),
+         residence_urban_rural: document.getElementById('residence_urban_rural').value,
+         mother_education_level: document.getElementById('mother_education_level').value,
+         mother_education_single_years: Number(document.getElementById('mother_education_single_years').value) || 6,
+         mother_marital_status: 'Married',
+         mother_working_status: document.getElementById('mother_working_status').value,
+         mother_weight_kg: Number(document.getElementById('mother_weight_kg').value) || 60,
+         mother_bmi_x100: Number(document.getElementById('mother_bmi_x100').value) || 2400,
+         age_at_first_birth: Number(document.getElementById('age_at_first_birth').value) || 20,
+         household_size: Number(document.getElementById('household_size').value) || 5,
+         wealth_index_quintile: document.getElementById('wealth_index_quintile').value,
+         wealth_index_score: Number(document.getElementById('wealth_index_score').value) || 0.0,
+         child_recent_diarrhea: document.getElementById('child_recent_diarrhea').value,
+         child_fever_recent: document.getElementById('child_fever_recent').value,
+         breastfeeding_status: document.getElementById('breastfeeding_status').value,
+         drank_from_bottle_recently: 'No',
+         fed_tinned_powdered_fresh_milk: 'No',
+         fed_baby_formula: 'No',
+         source_of_drinking_water: 'Piped into dwelling',
+         type_of_toilet_facility: document.getElementById('type_of_toilet_facility').value,
+         type_of_cooking_fuel: 'Electricity',
+         has_electricity: 'Yes',
+         has_refrigerator: 'No',
+         main_floor_material: document.getElementById('main_floor_material').value,
+         main_wall_material: document.getElementById('main_wall_material').value,
+         main_roof_material: document.getElementById('main_roof_material').value,
+         owns_farm_animals_livestock: 'No',
+         has_land_suitable_for_agriculture: 'No',
+         owns_agricultural_land: 'No'
+       };
+
+       resultTitle.textContent = 'Calculating...';
+       resultText.textContent = 'Sending request to backend';
+       resultJson.style.display = 'none';
+       document.getElementById('resultCardsContainer').style.display = 'none';
+
+      const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://127.0.0.1:8000' : window.location.origin;
+      try {
+        const resp = await fetch(`${API_BASE}/api/v1/predict`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          // Show server validation errors or other details in the UI
+          resultTitle.textContent = 'Error';
+          resultText.textContent = (data.detail && typeof data.detail === 'string') ? data.detail : 'Validation or server error';
+          resultJson.textContent = JSON.stringify(data.detail || data, null, 2);
+          resultJson.style.display = 'block';
+          return;
+        }
+
+        // Display user-friendly result cards instead of raw JSON
+         resultTitle.textContent = 'Prediction Result';
+         resultText.textContent = '';
+
+         // Show user-friendly cards container
+         document.getElementById('resultCardsContainer').style.display = 'block';
+
+         // Populate prediction card
+         document.getElementById('predictionValue').textContent = data.prediction;
+
+         // Populate risk level card with color coding
+         const riskLevelCard = document.getElementById('riskLevelCard');
+         document.getElementById('riskLevelValue').textContent = data.risk_level;
+         riskLevelCard.className = 'result-card ' + data.risk_level.toLowerCase();
+
+         // Populate risk factors if any
+         const riskFactorsContainer = document.getElementById('riskFactorsContainer');
+         const riskFactorsList = document.getElementById('riskFactorsList');
+         if (data.risk_factors && data.risk_factors.length > 0) {
+           riskFactorsContainer.style.display = 'block';
+           riskFactorsList.innerHTML = data.risk_factors
+             .map(factor => `<li>${factor.replace(/_/g, ' ')}</li>`)
+             .join('');
+         } else {
+           riskFactorsContainer.style.display = 'none';
+         }
+
+         // Store raw data for technical details
+         document.getElementById('resultJson').textContent = JSON.stringify(data, null, 2);
+         document.getElementById('resultJson').style.display = 'none';
+       } catch (err) {
+         resultTitle.textContent = 'Error';
+         // err.message can be opaque; stringify to give the user something useful
+         resultText.textContent = err && err.message ? err.message : JSON.stringify(err);
+         document.getElementById('resultCardsContainer').style.display = 'none';
+         document.getElementById('resultJson').textContent = JSON.stringify(err, null, 2);
+         document.getElementById('resultJson').style.display = 'block';
+       }
+     });
+
+     // Toggle technical details visibility
+     function toggleTechnicalDetails() {
+       const jsonDiv = document.getElementById('resultJson');
+       const btn = document.querySelector('.show-json-btn');
+       if (jsonDiv.style.display === 'none') {
+         jsonDiv.style.display = 'block';
+         btn.textContent = 'Hide technical details';
+       } else {
+         jsonDiv.style.display = 'none';
+         btn.textContent = 'Show technical details';
+       }
+     }
+   </script>
+</body>
+</html>
+
+
+
+
